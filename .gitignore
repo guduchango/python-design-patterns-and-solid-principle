@@ -1,0 +1,64 @@
+# Archivos y carpetas de Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pyo
+*.pyd
+*.pvm
+
+# Entornos virtuales
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.env
+
+# Configuraciones de herramientas
+*.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+
+# Archivos de configuración específicos de entornos
+*.env
+*.env.*
+config.yaml
+config.json
+
+# Archivos generados
+*.log
+*.sqlite3
+*.bak
+*.tmp
+*.cache
+
+# Paquetes y dependencias
+*.egg-info/
+*.egg
+dist/
+build/
+pip-wheel-metadata/
+
+# Archivos de cobertura de pruebas
+.coverage
+*.cover
+coverage.xml
+.cache/
+.cache/
+
+# Archivos de pruebas generados
+tests/*.xml
+tests/output/
+
+# Archivos de bases de datos temporales
+*.db
+*.sqlite3
+db.sqlite3
+
+# Archivos de sistemas operativos
+.DS_Store
+Thumbs.db
