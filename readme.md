@@ -23,8 +23,8 @@ This project is a practical example of using **design patterns** and **SOLID pri
 ## 🛠️ **Setup and Installation**
 ### 1. Clone this repository
 ```bash
-git clone https://github.com/yourusername/your-repo.git
-cd your-repo
+git clone git@github.com:guduchango/python-design-patterns-and-solid-principle.git
+cd python-design-patterns-and-solid-principle.git
 
 ```
 ### 2. Set up the virtual environment
@@ -41,6 +41,7 @@ pip install -r app/requirements.txt
 - Create a new account stripe https://stripe.com/
 - Go to https://dashboard.stripe.com/test/apikeys
 - Read transacctions on https://dashboard.stripe.com/test/payments
+### 5.  run
 ```bash
 python3.10 app/main.py
 ```
