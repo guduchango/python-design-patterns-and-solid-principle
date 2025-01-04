@@ -1,3 +1,18 @@
+"""
+features agregados: 
++ PaymentResponse: objeto
++ RefundPaymentProtocol: interfaz
++ PaymentProcessorProtocol:interfaz
++ RecurringPaymentProtocol: interfaz
++ StripePaymentProcessor: subclase (ejecuta demasiadas cosas)
++ OfflinePaymentProcessor: subclase
+-------------------------------------------------------------
+PREGUNTA: ¿Qué principio SOLID se estaba siguiendo en los métodos de recurrencia?
+El principio S: single responsibity principle porque está dedicado úni-
+camente a configurar los pagos con stripe y de la suscripción 
+están delegadas a métodos auxiliares
+"""
+
 import os
 from dataclasses import dataclass, field
 from typing import Optional, Protocol
@@ -33,10 +48,10 @@ class PaymentResponse(BaseModel):
     message: Optional[str] = None
 
 
-class PaymentProcessorProtocol(Protocol):
+class PaymentProcessor(Protocol): 
     """
     Protocol for processing payments, refunds, and recurring payments.
-
+    # HEREDA A TODOS LOS PAYMENTPROCESOR
     This protocol defines the interface for payment processors. Implementations
     should provide methods for processing payments, refunds, and setting up recurring payments.
     """
@@ -44,21 +59,15 @@ class PaymentProcessorProtocol(Protocol):
     def process_transaction(
         self, customer_data: CustomerData, payment_data: PaymentData
     ) -> PaymentResponse: ...
-
-
-class RefundPaymentProtocol(Protocol):
-    def refund_payment(self, transaction_id: str) -> PaymentResponse: ...
-
-
-class RecurringPaymentProtocol(Protocol):
+    
+    def refund_payment(self, transaction_id:str) -> PaymentResponse: ...
+    
     def setup_recurring_payment(
         self, customer_data: CustomerData, payment_data: PaymentData
-    ) -> PaymentResponse: ...
+    ) ->PaymentResponse: ...
 
 
-class StripePaymentProcessor(
-    PaymentProcessorProtocol, RefundPaymentProtocol, RecurringPaymentProtocol
-):
+class StripePaymentProcessor(PaymentProcessor):
     def process_transaction(
         self, customer_data: CustomerData, payment_data: PaymentData
     ) -> PaymentResponse:
@@ -145,7 +154,9 @@ class StripePaymentProcessor(
                 message=str(e),
             )
 
-    def _get_or_create_customer(self, customer_data: CustomerData) -> stripe.Customer:
+    def _get_or_create_customer(
+        self, customer_data: CustomerData
+    ) -> stripe.Customer:
         """
         Creates a new customer in Stripe or retrieves an existing one.
         """
@@ -172,7 +183,9 @@ class StripePaymentProcessor(
             payment_method.id,
             customer=customer_id,
         )
-        print(f"Payment method {payment_method.id} attached to customer {customer_id}")
+        print(
+            f"Payment method {payment_method.id} attached to customer {customer_id}"
+        )
         return payment_method
 
     def _set_default_payment_method(
@@ -190,7 +203,7 @@ class StripePaymentProcessor(
         print(f"Default payment method set for customer {customer_id}")
 
 
-class OfflinePaymentProcessor(PaymentProcessorProtocol):
+class OfflinePaymentProcessor(PaymentProcessor):
     def process_transaction(
         self, customer_data: CustomerData, payment_data: PaymentData
     ) -> PaymentResponse:
@@ -201,7 +214,20 @@ class OfflinePaymentProcessor(PaymentProcessorProtocol):
             transaction_id=str(uuid.uuid4()),
             message="Offline payment success",
         )
-
+    """
+    los siguientes métodos levantan errores porque no se pueden hacer reembolsos ni recurrencias a efectivo
+    se incumple el principio de segregación de interfaces porque una clase no debería depender 
+    de clases que no puede implementar
+    """
+    def refund_payment(self, transaction_id: str) -> PaymentResponse:
+        print("refunds aren't supported in OfflinePaymentOricessor.")
+        raise NotImplementedError("Refunds not supported in offline processor.")
+    
+    def setup_recurring_payment(self, customer_data: CustomerData, payment_data: PaymentData
+    ) ->PaymentResponse:
+        print("recurring payments aren't supported in OfflinePaymentOricessor.")
+        raise NotImplementedError("Refunds not supported in offline processor.")
+    
 
 class Notifier(Protocol):
     """
@@ -252,15 +278,23 @@ class TransactionLogger:
         payment_response: PaymentResponse,
     ):
         with open("transactions.log", "a") as log_file:
-            log_file.write(f"{customer_data.name} paid {payment_data.amount}\n")
+            log_file.write(
+                f"{customer_data.name} paid {payment_data.amount}\n"
+            )
             log_file.write(f"Payment status: {payment_response.status}\n")
             if payment_response.transaction_id:
-                log_file.write(f"Transaction ID: {payment_response.transaction_id}\n")
+                log_file.write(
+                    f"Transaction ID: {payment_response.transaction_id}\n"
+                )
             log_file.write(f"Message: {payment_response.message}\n")
 
-    def log_refund(self, transaction_id: str, refund_response: PaymentResponse):
+    def log_refund(
+        self, transaction_id: str, refund_response: PaymentResponse
+    ):
         with open("transactions.log", "a") as log_file:
-            log_file.write(f"Refund processed for transaction {transaction_id}\n")
+            log_file.write(
+                f"Refund processed for transaction {transaction_id}\n"
+            )
             log_file.write(f"Refund status: {refund_response.status}\n")
             log_file.write(f"Message: {refund_response.message}\n")
 
@@ -273,7 +307,10 @@ class CustomerValidator:
         if not customer_data.contact_info:
             print("Invalid customer data: missing contact info")
             raise ValueError("Invalid customer data: missing contact info")
-        if not (customer_data.contact_info.email or customer_data.contact_info.phone):
+        if not (
+            customer_data.contact_info.email
+            or customer_data.contact_info.phone
+        ):
             print("Invalid customer data: missing email and phone")
             raise ValueError("Invalid customer data: missing email and phone")
 
@@ -290,15 +327,15 @@ class PaymentDataValidator:
 
 @dataclass
 class PaymentService:
-    payment_processor: PaymentProcessorProtocol
+    payment_processor: PaymentProcessor
     notifier: Notifier
-    customer_validator: CustomerValidator = field(default_factory=CustomerValidator)
+    customer_validator: CustomerValidator = field(
+        default_factory=CustomerValidator
+    )
     payment_validator: PaymentDataValidator = field(
         default_factory=PaymentDataValidator
     )
     logger: TransactionLogger = field(default_factory=TransactionLogger)
-    recurring_processor: Optional[RecurringPaymentProtocol] = None
-    refund_processor: Optional[RefundPaymentProtocol] = None
 
     def process_transaction(
         self, customer_data: CustomerData, payment_data: PaymentData
@@ -309,23 +346,25 @@ class PaymentService:
             customer_data, payment_data
         )
         self.notifier.send_confirmation(customer_data)
-        self.logger.log_transaction(customer_data, payment_data, payment_response)
+        self.logger.log_transaction(
+            customer_data, payment_data, payment_response
+        )
         return payment_response
 
     def process_refund(self, transaction_id: str):
-        if not self.refund_processor:
-            raise Exception("this processor does not support refunds")
-        refund_response = self.refund_processor.refund_payment(transaction_id)
+        refund_response = self.payment_processor.refund_payment(transaction_id)
         self.logger.log_refund(transaction_id, refund_response)
         return refund_response
 
-    def setup_recurring(self, customer_data: CustomerData, payment_data: PaymentData):
-        if not self.recurring_processor:
-            raise Exception("this processor does not support recurring")
-        recurring_response = self.recurring_processor.setup_recurring_payment(
+    def setup_recurring(
+        self, customer_data: CustomerData, payment_data: PaymentData
+    ):
+        recurring_response = self.payment_processor.setup_recurring_payment(
             customer_data, payment_data
         )
-        self.logger.log_transaction(customer_data, payment_data, recurring_response)
+        self.logger.log_transaction(
+            customer_data, payment_data, recurring_response
+        )
         return recurring_response
 
 
@@ -352,19 +391,17 @@ if __name__ == "__main__":
     sms_notifier = SMSNotifier(sms_gateway)
 
     # # Using Stripe processor with email notifier
-    payment_service_email = PaymentService(
-        stripe_processor,
-        email_notifier,
-        refund_processor=stripe_processor,
-        recurring_processor=stripe_processor,
-    )
+    payment_service_email = PaymentService(stripe_processor, email_notifier)
     payment_service_email.process_transaction(customer_data_with_email, payment_data)
 
     # Using Stripe processor with SMS notifier
     payment_service_sms = PaymentService(stripe_processor, sms_notifier)
-    sms_payment_response = payment_service_sms.process_transaction(
-        customer_data_with_phone, payment_data
-    )
+    sms_payment_response = payment_service_sms.process_transaction(customer_data_with_phone, payment_data)
+
+    #Using strupe processor with SMS notifier
+    payment_service_sms = PaymentService(stripe_processor, sms_notifier)
+    sms_payment_response = payment_service_sms.process_transaction(customer_data_with_phone, payment_data)
+
 
     # Example of processing a refund using Stripe processor
     transaction_id_to_refund = sms_payment_response.transaction_id
@@ -388,7 +425,9 @@ if __name__ == "__main__":
 
     # Attempt to set up recurring payment using offline processor (will fail)
     try:
-        offline_payment_service.setup_recurring(customer_data_with_email, payment_data)
+        offline_payment_service.setup_recurring(
+            customer_data_with_email, payment_data
+        )
 
     except Exception as e:
         print(
