@@ -1,28 +1,25 @@
 import os
-from dataclasses import dataclass
-
-import stripe
 from dotenv import load_dotenv
-from stripe import Charge
-from stripe.error import StripeError
 
 _ = load_dotenv()
 
 
-@dataclass
 class PaymentProcessor:
-    def process_transaction(self, customer_data, payment_data) -> Charge:
+    def process_transaction(self, customer_data, payment_data):
         if not customer_data.get("name"):
             print("Invalid customer data: missing name")
-            raise ValueError("Invalid customer data: missing name")
+            return
 
         if not customer_data.get("contact_info"):
             print("Invalid customer data: missing contact info")
-            raise ValueError("Invalid customer data: missing contact info")
+            return
 
         if not payment_data.get("source"):
             print("Invalid payment data")
-            raise ValueError("Invalid payment data")
+            return
+
+        import stripe
+        from stripe.error import StripeError
 
         stripe.api_key = os.getenv("STRIPE_API_KEY")
 
@@ -36,7 +33,7 @@ class PaymentProcessor:
             print("Payment successful")
         except StripeError as e:
             print("Payment failed:", e)
-            raise e
+            return
 
         if "email" in customer_data["contact_info"]:
             # import smtplib
@@ -61,13 +58,11 @@ class PaymentProcessor:
 
         else:
             print("No valid contact information for notification")
-            return charge
+            return
 
         with open("transactions.log", "a") as log_file:
             log_file.write(f"{customer_data['name']} paid {payment_data['amount']}\n")
             log_file.write(f"Payment status: {charge['status']}\n")
-
-        return charge
 
 
 if __name__ == "__main__":
@@ -82,7 +77,7 @@ if __name__ == "__main__":
         "contact_info": {"phone": "1234567890"},
     }
 
-    payment_data = {"amount": 500, "source": "tok_mastercard", "cvv": 123}
+    payment_data = {"amount": 100, "source": "tok_mastercard", "cvv": 123}
 
     payment_processor.process_transaction(customer_data_with_email, payment_data)
     payment_processor.process_transaction(customer_data_with_phone, payment_data)
