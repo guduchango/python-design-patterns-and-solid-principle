@@ -1,4 +1,4 @@
-from commons.payment_data import PaymentData, PaymentType
+from commons import PaymentData, PaymentType
 
 from processors import (
     PaymentProcessorProtocol,
