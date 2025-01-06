@@ -1,8 +1,9 @@
 from loggers import TransactionLogger
 from notifiers import EmailNotifier, NotifierProtocol, SMSNotifier
 from processors import StripePaymentProcessor
-from service import PaymentProcessorFactory
+from factory import PaymentProcessorFactory
 from validators import CustomerValidator, PaymentDataValidator
+from logging_service import PaymentServiceLogging
 
 from commons import CustomerData, ContactInfo, PaymentData
 
@@ -52,3 +53,7 @@ if __name__ == "__main__":
     )
     
     service.process_transaction(customer_data=customer_data, payment_data=payment_data)
+
+    logging_service = PaymentServiceLogging(wrapped=service)
+
+    logging_service.process_transaction(customer_data=customer_data, payment_data=payment_data)
