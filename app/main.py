@@ -70,6 +70,7 @@ if __name__ == "__main__":
         .set_customer_validator()
         .set_payment_processor(payment_data)
         .set_notifier(customer_data)
+        .set_listeners()
         .build()
     )
 
