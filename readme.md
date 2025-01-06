@@ -43,5 +43,5 @@ pip install -r app/requirements.txt
 - Read transacctions on https://dashboard.stripe.com/test/payments
 ### 5.  run
 ```bash
-python3.10 app/main.py
+python3.11 app/main.py
 ```
