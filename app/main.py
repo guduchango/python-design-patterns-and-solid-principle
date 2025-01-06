@@ -6,6 +6,7 @@ from validators import CustomerValidator, PaymentDataValidator
 from logging_service import PaymentServiceLogging
 
 from commons import CustomerData, ContactInfo, PaymentData
+from builder import PaymentServiceBuilder
 
 
 def get_email_notifier() -> EmailNotifier:
@@ -57,3 +58,19 @@ if __name__ == "__main__":
     logging_service = PaymentServiceLogging(wrapped=service)
 
     logging_service.process_transaction(customer_data=customer_data, payment_data=payment_data)
+
+    payment_data = PaymentData(amount=100, source="tok_visa", currency="USD")
+
+
+
+    builder = PaymentServiceBuilder()
+    service = (
+        builder.set_logger()
+        .set_payment_validator()
+        .set_customer_validator()
+        .set_payment_processor(payment_data)
+        .set_notifier(customer_data)
+        .build()
+    )
+
+    service.process_transaction(customer_data,payment_data)
