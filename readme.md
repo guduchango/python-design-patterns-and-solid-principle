@@ -1,4 +1,6 @@
-# Example Project: Design Patterns and SOLID Principles with Python and Stripe
+# Platzi Course: Design Patterns and SOLID Principles in a Payment Processor
+[Course Link](https://platzi.com/cursos/solid-python/)
+
 
 This project is a practical example of using **design patterns** and **SOLID principles** in Python, integrating the **Stripe API**. The goal is to iteratively refactor the code, applying best practices while focusing on clean and maintainable design.
 
